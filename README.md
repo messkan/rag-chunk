@@ -262,3 +262,11 @@ rag-chunk/
 ## License
 
 MIT
+
+## Note on tokenization
+
+Currently the `--chunk-size` and `--overlap` options count **words** (whitespace-based tokenization). This keeps the tool simple and dependency-free, but it does not match the token counts used by LLMs (for example, OpenAI GPT models use subword tokenization).
+
+We will soon add optional support for `tiktoken` to enable precise token-level chunking that matches model context limits. When available you will be able to enable it via a CLI flag (for example `--use-tiktoken`) or install the optional dependency `rag-chunk[tiktoken]`.
+
+In the meantime, treat `--chunk-size` and `--overlap` as word-based estimates and tune them using your test questions to find the right granularity.
