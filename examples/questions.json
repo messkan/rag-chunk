@@ -1,0 +1,36 @@
+{
+  "questions": [
+    {
+      "question": "What are the three main stages of a RAG pipeline?",
+      "relevant": ["indexing", "retrieval", "generation"]
+    },
+    {
+      "question": "What is the main advantage of RAG over pure generative models?",
+      "relevant": ["grounding", "retrieved documents", "hallucinate"]
+    },
+    {
+      "question": "What are the pros and cons of fixed-size chunking?",
+      "relevant": ["fast", "deterministic", "break semantic", "context boundaries"]
+    },
+    {
+      "question": "Why use sliding window chunking?",
+      "relevant": ["overlapping", "preserves boundary context", "redundancy"]
+    },
+    {
+      "question": "When is paragraph-based chunking most effective?",
+      "relevant": ["well-structured", "semantic coherence", "document structure"]
+    },
+    {
+      "question": "How is recall calculated for chunking evaluation?",
+      "relevant": ["relevant phrases", "top-k chunks", "total relevant"]
+    },
+    {
+      "question": "What factors affect optimal chunk size?",
+      "relevant": ["query complexity", "document structure", "context window", "latency"]
+    },
+    {
+      "question": "What is a typical chunk size range for technical documentation?",
+      "relevant": ["200-500", "technical documentation"]
+    }
+  ]
+}

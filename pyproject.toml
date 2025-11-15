@@ -1,0 +1,21 @@
+[project]
+name = "rag-chunk"
+version = "0.1.0"
+description = "CLI tool to parse, chunk, and evaluate Markdown documents for RAG pipelines"
+authors = [ { name = "messkan" } ]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["rag", "chunking", "markdown", "retrieval"]
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Topic :: Software Development :: Libraries :: Python Modules", "Intended Audience :: Developers"]
+
+[project.scripts]
+rag-chunk = "src.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[build-system]
+requires = ["setuptools>=67.0"]
+build-backend = "setuptools.build_meta"
