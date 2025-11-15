@@ -1,7 +1,20 @@
 # rag-chunk
 
 CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) preparation.
+## 🎉 First Public Release
 
+Available on PyPI: https://pypi.org/project/rag-chunk/
+
+### Features
+- ✅ Parse and clean Markdown files
+- ✅ Three chunking strategies: fixed-size, sliding-window, paragraph
+- ✅ Recall-based evaluation with test JSON files
+- ✅ CLI with table/JSON/CSV output formats
+- ✅ Realistic example corpus included
+
+### Installation
+```bash
+pip install rag-chunk
 ## Features
 
 - Parse and clean Markdown files in a folder
