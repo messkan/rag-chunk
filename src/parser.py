@@ -1,5 +1,7 @@
 """Markdown parsing and cleaning utilities."""
+
 from pathlib import Path
+
 
 def read_markdown_folder(folder: str) -> list:
     """Return list of (path, text) for all .md files in folder (non-recursive)."""
@@ -13,6 +15,7 @@ def read_markdown_folder(folder: str) -> list:
             text = f.read_text(errors="ignore")
         result.append((str(f), text))
     return result
+
 
 def clean_markdown_text(docs: list) -> str:
     """Concatenate markdown texts and normalize whitespace, collapsing multiple blank lines."""

@@ -19,3 +19,6 @@ include = ["src*"]
 [build-system]
 requires = ["setuptools>=67.0"]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+rich = ["rich>=12.0.0"]
