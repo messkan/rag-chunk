@@ -5,6 +5,7 @@ import csv
 import json
 import time
 from pathlib import Path
+
 from . import chunker
 from . import parser as mdparser
 from . import scorer
