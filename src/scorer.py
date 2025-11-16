@@ -1,6 +1,9 @@
 """Scoring and retrieval utilities."""
-from typing import List, Dict, Tuple
-import json, math
+
+import json
+import math
+from typing import Dict, List, Tuple
+
 
 def load_test_file(path: str) -> List[Dict]:
     """Load test file returning list of question dicts."""
@@ -9,6 +12,7 @@ def load_test_file(path: str) -> List[Dict]:
     if isinstance(data, dict) and "questions" in data:
         data = data["questions"]
     return data
+
 
 def chunk_similarity(chunk_text: str, query: str) -> float:
     """Simple lexical similarity based on overlapping unique words."""
@@ -20,11 +24,13 @@ def chunk_similarity(chunk_text: str, query: str) -> float:
     denom = math.sqrt(len(c_words) * len(q_words))
     return inter / denom if denom else 0.0
 
+
 def retrieve_top_k(chunks: List[Dict], query: str, k: int) -> List[Dict]:
     """Return top k chunks by similarity."""
     scored = [(chunk_similarity(c["text"], query), c) for c in chunks]
     scored.sort(key=lambda x: x[0], reverse=True)
     return [c for _, c in scored[:k]]
+
 
 def compute_recall(retrieved: List[Dict], relevant_phrases: List[str]) -> float:
     """Recall of relevant phrases contained in retrieved chunks."""
@@ -38,7 +44,10 @@ def compute_recall(retrieved: List[Dict], relevant_phrases: List[str]) -> float:
             found += 1
     return found / len(relevant_phrases)
 
-def evaluate_strategy(chunks: List[Dict], questions: List[Dict], top_k: int) -> Tuple[float, List[Dict]]:
+
+def evaluate_strategy(
+    chunks: List[Dict], questions: List[Dict], top_k: int
+) -> Tuple[float, List[Dict]]:
     """Return average recall and per-question details."""
     per = []
     recalls = []

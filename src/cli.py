@@ -1,9 +1,24 @@
 """Command-line interface for rag-chunk."""
-import argparse, os, csv, json, time
+
+import argparse
+import csv
+import json
+import time
 from pathlib import Path
-from . import parser as mdparser
 from . import chunker
+from . import parser as mdparser
 from . import scorer
+
+try:
+    from rich.console import Console
+    from rich.table import Table
+
+    RICH_AVAILABLE = True
+    console = Console()
+except ImportError:  # pragma: no cover - optional dependency
+    RICH_AVAILABLE = False
+    console = None
+
 
 def write_chunks(chunks, strategy: str):
     """Write chunks to .chunks directory with timestamp subfolder."""
@@ -14,6 +29,7 @@ def write_chunks(chunks, strategy: str):
     for c in chunks:
         (outdir / f"chunk_{c['id']}.txt").write_text(c["text"], encoding="utf-8")
     return outdir
+
 
 def format_table(rows):
     """Return simple table string from list of dict rows with same keys."""
@@ -29,38 +45,120 @@ def format_table(rows):
         body.append(sep.join(str(r[k]).ljust(widths[k]) for k in keys))
     return "\n".join([header, line] + body)
 
-def analyze(folder: str, strategy: str, chunk_size: int, overlap: int, test_file: str, top_k: int, output: str):
-    docs = mdparser.read_markdown_folder(folder)
+
+def analyze(args):
+    """Analyze markdown files using provided CLI args namespace.
+
+    Args:
+        args: argparse.Namespace returned by the CLI parser. Expected attributes:
+            folder, strategy, chunk_size, overlap, test_file, top_k, output
+
+    Returns:
+        int: exit code (0 on success, non-zero on error)
+    """
+
+    docs = mdparser.read_markdown_folder(args.folder)
     if not docs:
         print("No markdown files found")
         return 1
     text = mdparser.clean_markdown_text(docs)
-    strategies = [strategy] if strategy != "all" else list(chunker.STRATEGIES.keys())
+    strategies = (
+        [args.strategy] if args.strategy != "all" else list(chunker.STRATEGIES.keys())
+    )
     results = []
-    questions = []
-    if test_file:
-        questions = scorer.load_test_file(test_file)
     detail = {}
+    questions = None
+    if args.test_file:
+        questions = scorer.load_test_file(args.test_file)
+
     for strat in strategies:
         func = chunker.STRATEGIES.get(strat)
         if not func:
             print(f"Unknown strategy: {strat}")
             return 1
-        chunks = func(text, chunk_size=chunk_size, overlap=overlap)
-        outdir = write_chunks(chunks, strat)
-        chunk_count = len(chunks)
-        avg_recall = 0.0
-        per_questions = []
-        if questions:
-            avg_recall, per_questions = scorer.evaluate_strategy(chunks, questions, top_k)
-        results.append({"strategy": strat, "chunks": chunk_count, "avg_recall": round(avg_recall, 4), "saved": str(outdir)})
+        result, per_questions = _run_strategy(text, func, strat, args, questions)
+        results.append(result)
         detail[strat] = per_questions
+
+    _write_results(results, detail, args.output)
+
+    if not questions:
+        print(f"Total text length (chars): {len(text)}")
+    return 0
+
+
+def _run_strategy(text, func, strat, args, questions):
+    """Run a single chunking strategy and return result dict and per-question details.
+
+    Args:
+        text: Full cleaned text
+        func: chunking function
+        strat: strategy name
+        args: argparse.Namespace containing configuration
+        questions: loaded questions list or None
+    """
+    chunk_size = args.chunk_size
+    overlap = args.overlap
+    top_k = args.top_k
+    chunks = func(text, chunk_size=chunk_size, overlap=overlap)
+    outdir = write_chunks(chunks, strat)
+    chunk_count = len(chunks)
+    avg_recall = 0.0
+    per_questions = []
+    if questions:
+        avg_recall, per_questions = scorer.evaluate_strategy(chunks, questions, top_k)
+    result = {
+        "strategy": strat,
+        "chunks": chunk_count,
+        "avg_recall": round(avg_recall, 4),
+        "saved": str(outdir),
+    }
+    return result, per_questions
+
+
+def _write_results(results, detail, output):
+    """Write or print analysis results in requested format.
+
+    Separated to reduce local variable count in `analyze`.
+    """
     if output == "table":
+        if RICH_AVAILABLE:
+            table = Table(show_header=True, header_style="bold magenta")
+            table.add_column("strategy", style="cyan")
+            table.add_column("chunks", justify="right")
+            table.add_column("avg_recall", justify="right")
+            table.add_column("saved")
+            for r in results:
+                avg = r.get("avg_recall", 0.0)
+                try:
+                    pct = f"{avg*100:.2f}%"
+                except (TypeError, ValueError):
+                    pct = str(avg)
+                if isinstance(avg, float):
+                    if avg >= 0.85:
+                        color = "green"
+                    elif avg >= 0.7:
+                        color = "yellow"
+                    else:
+                        color = "red"
+                    pct_cell = f"[{color}]{pct}[/{color}]"
+                else:
+                    pct_cell = pct
+                table.add_row(
+                    str(r.get("strategy", "")),
+                    str(r.get("chunks", "")),
+                    pct_cell,
+                    str(r.get("saved", "")),
+                )
+            console.print(table)
+            return
         print(format_table(results))
-    elif output == "json":
+        return
+    if output == "json":
         obj = {"results": results, "detail": detail}
         print(json.dumps(obj, indent=2))
-    elif output == "csv":
+        return
+    if output == "csv":
         wpath = Path("analysis_results.csv")
         with wpath.open("w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
@@ -68,33 +166,58 @@ def analyze(folder: str, strategy: str, chunk_size: int, overlap: int, test_file
             for r in results:
                 w.writerow([r["strategy"], r["chunks"], r["avg_recall"], r["saved"]])
         print(str(wpath))
-    else:
-        print("Unsupported output format")
-        return 1
-    if not questions:
-        print(f"Total text length (chars): {len(text)}")
-    return 0
+        return
+    print("Unsupported output format")
+    return
+
 
 def build_parser():
+    """Build and return the CLI argument parser."""
     ap = argparse.ArgumentParser(prog="rag-chunk")
     sub = ap.add_subparsers(dest="command")
     analyze_p = sub.add_parser("analyze", help="Analyze a folder of markdown files")
     analyze_p.add_argument("folder", type=str, help="Folder containing .md files")
-    analyze_p.add_argument("--strategy", type=str, default="fixed-size", choices=["fixed-size", "sliding-window", "paragraph", "all"], help="Chunking strategy or all")
-    analyze_p.add_argument("--chunk-size", type=int, default=200, help="Chunk size in words")
-    analyze_p.add_argument("--overlap", type=int, default=50, help="Overlap in words for sliding-window")
-    analyze_p.add_argument("--test-file", type=str, default="", help="Path to JSON test file")
-    analyze_p.add_argument("--top-k", type=int, default=3, help="Top k chunks to retrieve per question")
-    analyze_p.add_argument("--output", type=str, default="table", choices=["table", "json", "csv"], help="Output format")
+    analyze_p.add_argument(
+        "--strategy",
+        type=str,
+        default="fixed-size",
+        choices=["fixed-size", "sliding-window", "paragraph", "all"],
+        help="Chunking strategy or all",
+    )
+    analyze_p.add_argument(
+        "--chunk-size", type=int, default=200, help="Chunk size in words"
+    )
+    analyze_p.add_argument(
+        "--overlap", type=int, default=50, help="Overlap in words for sliding-window"
+    )
+    analyze_p.add_argument(
+        "--test-file", type=str, default="", help="Path to JSON test file"
+    )
+    analyze_p.add_argument(
+        "--top-k", type=int, default=3, help="Top k chunks to retrieve per question"
+    )
+    analyze_p.add_argument(
+        "--output",
+        type=str,
+        default="table",
+        choices=["table", "json", "csv"],
+        help="Output format",
+    )
     return ap
 
+
 def main():
+    """Entry point for the rag-chunk CLI.
+
+    Parses CLI arguments and dispatches to the appropriate command.
+    """
     ap = build_parser()
     args = ap.parse_args()
     if args.command == "analyze":
-        code = analyze(args.folder, args.strategy, args.chunk_size, args.overlap, args.test_file, args.top_k, args.output)
+        code = analyze(args)
         raise SystemExit(code)
     ap.print_help()
+
 
 if __name__ == "__main__":
     main()
