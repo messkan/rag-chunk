@@ -12,6 +12,33 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 - ✅ CLI with table/JSON/CSV output formats
 - ✅ Realistic example corpus included
 
+### Demo
+[View the demo](assets/demo.gif)
+
+## 🚀 Roadmap
+
+`rag-chunk` is actively developed! Here's the plan to move from a basic tool to a full-featured chunking workbench.
+
+### ✅ Version 0.1 – Launched
+* [x] Core CLI engine (`click`)
+* [x] Markdown (`.md`) file parsing (`mistune`)
+* [x] Basic chunking strategies: `fixed-size` and `paragraph` (word-based)
+* [x] Evaluation harness: calculate **Recall score** from a `test-file.json`
+* [x] **PyPI Publication:** Installable via `pip install rag-chunk`
+
+### 🎯 Version 0.2 – In Progress
+* [x] CLI output formatting (`rich` tables)
+* [x] **Demo GIF:** Showcase the tool in action in the README
+* [ ] **`tiktoken` Support:** Add `--use-tiktoken` flag for precise, token-based chunking
+* [ ] CLI/UX improvements and bug fixes
+
+### 📈 Version 1.0 – Planned
+* [ ] **More Strategies:** Add advanced strategies like `RecursiveCharacterTextSplitter`, `HierarchicalChunker`
+* [ ] **More File Types:** Support `.txt`, `.rst`, and other plain text formats
+* [ ] **Export & Logging:** Save results as JSON/CSV, optional MLFlow integration
+* [ ] **Benchmarking Mode:** Compare chunking strategies automatically
+
+
 ### Installation
 ```bash
 pip install rag-chunk

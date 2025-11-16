@@ -15,10 +15,10 @@ try:
     from rich.table import Table
 
     RICH_AVAILABLE = True
-    console = Console()
+    CONSOLE = Console()
 except ImportError:  # pragma: no cover - optional dependency
     RICH_AVAILABLE = False
-    console = None
+    CONSOLE = None
 
 
 def write_chunks(chunks, strategy: str):
@@ -151,7 +151,7 @@ def _write_results(results, detail, output):
                     pct_cell,
                     str(r.get("saved", "")),
                 )
-            console.print(table)
+            CONSOLE.print(table)
             return
         print(format_table(results))
         return
