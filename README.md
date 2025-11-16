@@ -13,7 +13,7 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 - ✅ Realistic example corpus included
 
 ### Demo
-[View the demo](assets/demo.gif)
+![rag-chunk demo](demo.gif)
 
 ## 🚀 Roadmap
 
