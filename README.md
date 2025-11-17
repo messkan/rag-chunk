@@ -11,6 +11,7 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 - ✅ Recall-based evaluation with test JSON files
 - ✅ CLI with table/JSON/CSV output formats
 - ✅ Realistic example corpus included
+- ✅ Optional tiktoken support for precise token-based chunking
 
 ### Demo
 ![rag-chunk demo](demo.gif)
@@ -29,7 +30,7 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 ### 🎯 Version 0.2 – In Progress
 * [x] CLI output formatting (`rich` tables)
 * [x] **Demo GIF:** Showcase the tool in action in the README
-* [ ] **`tiktoken` Support:** Add `--use-tiktoken` flag for precise, token-based chunking
+* [x] **`tiktoken` Support:** Add `--use-tiktoken` flag for precise, token-based chunking
 * [ ] CLI/UX improvements and bug fixes
 
 ### 📈 Version 1.0 – Planned
@@ -53,13 +54,26 @@ pip install rag-chunk
 ## Installation
 
 ```bash
+pip install rag-chunk
+```
+
+For token-based chunking with tiktoken support:
+
+```bash
+pip install rag-chunk[tiktoken]
+```
+
+Or install from source:
+
+```bash
 pip install .
 ```
 
-or in development mode:
+Development mode:
 
 ```bash
 pip install -e .
+pip install -e .[tiktoken]  # with tiktoken support
 ```
 
 ## Quick Start
@@ -79,8 +93,9 @@ rag-chunk analyze <folder> [options]
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--strategy` | Chunking strategy: `fixed-size`, `sliding-window`, `paragraph`, or `all` | `fixed-size` |
-| `--chunk-size` | Number of words per chunk | `200` |
-| `--overlap` | Number of overlapping words (for sliding-window) | `50` |
+| `--chunk-size` | Number of words or tokens per chunk | `200` |
+| `--overlap` | Number of overlapping words or tokens (for sliding-window) | `50` |
+| `--use-tiktoken` | Use tiktoken for precise token-based chunking (requires `pip install rag-chunk[tiktoken]`) | `False` |
 | `--test-file` | Path to JSON test file with questions | None |
 | `--top-k` | Number of chunks to retrieve per question | `3` |
 | `--output` | Output format: `table`, `json`, or `csv` | `table` |
@@ -181,6 +196,74 @@ rag-chunk analyze examples/ --strategy all --test-file examples/questions.json -
 ```
 
 Creates `analysis_results.csv` with columns: strategy, chunks, avg_recall, saved.
+
+## Using Tiktoken for Precise Token-Based Chunking
+
+By default, `rag-chunk` uses word-based tokenization (whitespace splitting). For precise token-level chunking that matches LLM context limits (e.g., GPT-3.5/GPT-4), use the `--use-tiktoken` flag.
+
+### Installation
+
+```bash
+pip install rag-chunk[tiktoken]
+```
+
+### Usage Examples
+
+**Token-based fixed-size chunking:**
+
+```bash
+rag-chunk analyze examples/ --strategy fixed-size --chunk-size 512 --use-tiktoken --output table
+```
+
+This creates chunks of exactly 512 tokens (as counted by tiktoken for GPT models), not 512 words.
+
+**Compare word-based vs token-based chunking:**
+
+```bash
+# Word-based (default)
+rag-chunk analyze examples/ --strategy fixed-size --chunk-size 200 --output json
+
+# Token-based
+rag-chunk analyze examples/ --strategy fixed-size --chunk-size 200 --use-tiktoken --output json
+```
+
+**Token-based with sliding window:**
+
+```bash
+rag-chunk analyze examples/ --strategy sliding-window --chunk-size 1024 --overlap 128 --use-tiktoken --test-file examples/questions.json --top-k 3
+```
+
+### When to Use Tiktoken
+
+- ✅ **Use tiktoken when:**
+  - Preparing chunks for OpenAI models (GPT-3.5, GPT-4)
+  - You need to respect strict token limits (e.g., 8k, 16k context windows)
+  - Comparing chunking strategies with token-accurate measurements
+  - Your documents contain special characters, emojis, or non-ASCII text
+
+- ⚠️ **Use word-based (default) when:**
+  - Quick prototyping and testing
+  - Working with well-formatted English text
+  - Don't need exact token counts
+  - Want to avoid the tiktoken dependency
+
+### Token Counting
+
+You can also use tiktoken in your own scripts:
+
+```python
+from src.chunker import count_tokens
+
+text = "Your document text here..."
+
+# Word-based count
+word_count = count_tokens(text, use_tiktoken=False)
+print(f"Words: {word_count}")
+
+# Token-based count (requires tiktoken installed)
+token_count = count_tokens(text, use_tiktoken=True)
+print(f"Tokens: {token_count}")
+```
 
 ## Test File Format
 
@@ -290,10 +373,15 @@ rag-chunk/
 
 MIT
 
-## Note on tokenization
+## Note on Tokenization
 
-Currently the `--chunk-size` and `--overlap` options count **words** (whitespace-based tokenization). This keeps the tool simple and dependency-free, but it does not match the token counts used by LLMs (for example, OpenAI GPT models use subword tokenization).
+By default, `--chunk-size` and `--overlap` count **words** (whitespace-based tokenization). This keeps the tool simple and dependency-free.
 
-We will soon add optional support for `tiktoken` to enable precise token-level chunking that matches model context limits. When available you will be able to enable it via a CLI flag (for example `--use-tiktoken`) or install the optional dependency `rag-chunk[tiktoken]`.
+For precise token-level chunking that matches LLM token counts (e.g., OpenAI GPT models using subword tokenization), use the `--use-tiktoken` flag after installing the optional dependency:
 
-In the meantime, treat `--chunk-size` and `--overlap` as word-based estimates and tune them using your test questions to find the right granularity.
+```bash
+pip install rag-chunk[tiktoken]
+rag-chunk analyze docs/ --strategy fixed-size --chunk-size 512 --use-tiktoken
+```
+
+See the [Using Tiktoken](#using-tiktoken-for-precise-token-based-chunking) section for more details.
