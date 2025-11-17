@@ -129,13 +129,27 @@ def paragraph_chunks(text: str) -> List[Dict]:
 
 
 STRATEGIES = {
-    "fixed-size": lambda text, chunk_size=200, overlap=0, use_tiktoken=False, model="gpt-3.5-turbo": fixed_size_chunks(
-        text, chunk_size, use_tiktoken=use_tiktoken, model=model
+    "fixed-size": (
+        lambda text, chunk_size=200, overlap=0, use_tiktoken=False, model="gpt-3.5-turbo":
+        fixed_size_chunks(
+            text,
+            chunk_size,
+            use_tiktoken=use_tiktoken,
+            model=model
+        )
     ),
-    "sliding-window": lambda text, chunk_size=200, overlap=50, use_tiktoken=False, model="gpt-3.5-turbo": sliding_window_chunks(
-        text, chunk_size, overlap, use_tiktoken=use_tiktoken, model=model
+    "sliding-window": (
+        lambda text, chunk_size=200, overlap=50, use_tiktoken=False, model="gpt-3.5-turbo":
+        sliding_window_chunks(
+            text,
+            chunk_size,
+            overlap,
+            use_tiktoken=use_tiktoken,
+            model=model
+        )
     ),
-    "paragraph": lambda text, chunk_size=0, overlap=0, use_tiktoken=False, model="gpt-3.5-turbo": paragraph_chunks(
-        text
+    "paragraph": (
+        lambda text, chunk_size=0, overlap=0, use_tiktoken=False, model="gpt-3.5-turbo":
+        paragraph_chunks(text)
     ),
 }
