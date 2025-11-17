@@ -15,10 +15,10 @@ try:
     from rich.table import Table
 
     RICH_AVAILABLE = True
-    CONSOLE = Console()
+    console = Console()
 except ImportError:  # pragma: no cover - optional dependency
     RICH_AVAILABLE = False
-    CONSOLE = None
+    console = None
 
 
 def write_chunks(chunks, strategy: str):
@@ -58,37 +58,38 @@ def analyze(args):
         int: exit code (0 on success, non-zero on error)
     """
 
-    docs = mdparser.read_markdown_folder(args.folder)
-    if not docs:
+    results, text = _run_all_strategies(args)
+    if results is None:
         print("No markdown files found")
         return 1
+    _write_results(results, None, args.output)
+    if not args.test_file:
+        print(f"Total text length (chars): {len(text)}")
+    return 0
+
+
+def _run_all_strategies(args):
+    """Helper to run all strategies and collect results."""
+    docs = mdparser.read_markdown_folder(args.folder)
+    if not docs:
+        return None, None
     text = mdparser.clean_markdown_text(docs)
     strategies = (
         [args.strategy] if args.strategy != "all" else list(chunker.STRATEGIES.keys())
     )
     results = []
-    detail = {}
-    questions = None
-    if args.test_file:
-        questions = scorer.load_test_file(args.test_file)
-
     for strat in strategies:
         func = chunker.STRATEGIES.get(strat)
         if not func:
             print(f"Unknown strategy: {strat}")
-            return 1
-        result, per_questions = _run_strategy(text, func, strat, args, questions)
+            continue
+        result, per_questions = _run_strategy(text, func, strat, args)
+        result["per_questions"] = per_questions
         results.append(result)
-        detail[strat] = per_questions
-
-    _write_results(results, detail, args.output)
-
-    if not questions:
-        print(f"Total text length (chars): {len(text)}")
-    return 0
+    return results, text
 
 
-def _run_strategy(text, func, strat, args, questions):
+def _run_strategy(text, func, strat, args):
     """Run a single chunking strategy and return result dict and per-question details.
 
     Args:
@@ -96,33 +97,33 @@ def _run_strategy(text, func, strat, args, questions):
         func: chunking function
         strat: strategy name
         args: argparse.Namespace containing configuration
-        questions: loaded questions list or None
     """
-    chunk_size = args.chunk_size
-    overlap = args.overlap
-    top_k = args.top_k
-    use_tiktoken = getattr(args, "use_tiktoken", False)
-    tiktoken_model = getattr(args, "tiktoken_model", "gpt-3.5-turbo")
     chunks = func(
         text,
-        chunk_size=chunk_size,
-        overlap=overlap,
-        use_tiktoken=use_tiktoken,
-        model=tiktoken_model,
+        chunk_size=args.chunk_size,
+        overlap=args.overlap,
+        use_tiktoken=getattr(args, "use_tiktoken", False),
+        model=getattr(args, "tiktoken_model", "gpt-3.5-turbo"),
     )
     outdir = write_chunks(chunks, strat)
-    chunk_count = len(chunks)
-    avg_recall = 0.0
-    per_questions = []
+
+    avg_recall, per_questions = 0.0, []
+    questions = (
+        scorer.load_test_file(args.test_file)
+        if getattr(args, "test_file", None)
+        else None
+    )
     if questions:
-        avg_recall, per_questions = scorer.evaluate_strategy(chunks, questions, top_k)
-    result = {
+        avg_recall, per_questions = scorer.evaluate_strategy(
+            chunks, questions, args.top_k
+        )
+
+    return {
         "strategy": strat,
-        "chunks": chunk_count,
+        "chunks": len(chunks),
         "avg_recall": round(avg_recall, 4),
         "saved": str(outdir),
-    }
-    return result, per_questions
+    }, per_questions
 
 
 def _write_results(results, detail, output):
@@ -159,7 +160,7 @@ def _write_results(results, detail, output):
                     pct_cell,
                     str(r.get("saved", "")),
                 )
-            CONSOLE.print(table)
+            console.print(table)
             return
         print(format_table(results))
         return
