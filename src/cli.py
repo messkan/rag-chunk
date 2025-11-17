@@ -101,7 +101,15 @@ def _run_strategy(text, func, strat, args, questions):
     chunk_size = args.chunk_size
     overlap = args.overlap
     top_k = args.top_k
-    chunks = func(text, chunk_size=chunk_size, overlap=overlap)
+    use_tiktoken = getattr(args, "use_tiktoken", False)
+    tiktoken_model = getattr(args, "tiktoken_model", "gpt-3.5-turbo")
+    chunks = func(
+        text,
+        chunk_size=chunk_size,
+        overlap=overlap,
+        use_tiktoken=use_tiktoken,
+        model=tiktoken_model,
+    )
     outdir = write_chunks(chunks, strat)
     chunk_count = len(chunks)
     avg_recall = 0.0
@@ -186,10 +194,24 @@ def build_parser():
         help="Chunking strategy or all",
     )
     analyze_p.add_argument(
-        "--chunk-size", type=int, default=200, help="Chunk size in words"
+        "--chunk-size", type=int, default=200, help="Chunk size in words or tokens"
     )
     analyze_p.add_argument(
-        "--overlap", type=int, default=50, help="Overlap in words for sliding-window"
+        "--overlap",
+        type=int,
+        default=50,
+        help="Overlap in words or tokens for sliding-window",
+    )
+    analyze_p.add_argument(
+        "--use-tiktoken",
+        action="store_true",
+        help="Use tiktoken for precise token-based chunking (requires tiktoken package)",
+    )
+    analyze_p.add_argument(
+        "--tiktoken-model",
+        type=str,
+        default="gpt-3.5-turbo",
+        help="Model name for tiktoken encoding (default: gpt-3.5-turbo)",
     )
     analyze_p.add_argument(
         "--test-file", type=str, default="", help="Path to JSON test file"

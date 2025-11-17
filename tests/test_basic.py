@@ -45,3 +45,43 @@ def test_recall():
     ]
     avg, _ = scorer.evaluate_strategy(chunks, questions, top_k=1)
     assert 0.0 <= avg <= 1.0
+
+
+def test_token_counting_without_tiktoken():
+    """Test word-based token counting (default behavior)."""
+    text = "Hello world this is a test"
+    count = chunker.count_tokens(text, use_tiktoken=False)
+    assert count == 6
+
+
+def test_tiktoken_chunking_availability():
+    """Test that tiktoken functions handle import gracefully."""
+    text = "Sample text for testing"
+    try:
+        # This will work if tiktoken is installed
+        count = chunker.count_tokens(text, use_tiktoken=True)
+        assert count > 0
+        # Test chunking with tiktoken
+        chunks = chunker.fixed_size_chunks(text, chunk_size=5, use_tiktoken=True)
+        assert len(chunks) > 0
+    except ImportError as e:
+        # Expected if tiktoken is not installed
+        assert "tiktoken" in str(e).lower()
+
+
+def test_fixed_size_chunks_with_tiktoken_flag():
+    """Test that use_tiktoken parameter is accepted by chunking functions."""
+    text = "one two three four five six"
+    # Should work with use_tiktoken=False (default behavior)
+    chunks = chunker.fixed_size_chunks(text, chunk_size=3, use_tiktoken=False)
+    assert len(chunks) == 2
+    assert "one" in chunks[0]["text"]
+
+
+def test_sliding_window_with_tiktoken_flag():
+    """Test sliding window accepts tiktoken flag."""
+    text = " ".join(str(i) for i in range(1, 11))
+    chunks = chunker.sliding_window_chunks(
+        text, chunk_size=4, overlap=1, use_tiktoken=False
+    )
+    assert len(chunks) > 0
