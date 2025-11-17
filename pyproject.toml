@@ -1,7 +1,7 @@
 [project]
 name = "rag-chunk"
-version = "0.1.0"
-description = "CLI tool to parse, chunk, and evaluate Markdown documents for RAG pipelines"
+version = "0.2.0"
+description = "CLI tool to parse, chunk, and evaluate Markdown documents for RAG pipelines with token-accurate chunking support"
 authors = [ { name = "messkan" } ]
 license = { text = "MIT" }
 readme = "README.md"

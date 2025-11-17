@@ -1,43 +1,61 @@
 # rag-chunk
 
-CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) preparation.
-## 🎉 First Public Release
+**Current Version: 0.2.0** 🎉
+
+CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) pipelines with token-accurate chunking support.
 
 Available on PyPI: https://pypi.org/project/rag-chunk/
 
-### Features
-- ✅ Parse and clean Markdown files
-- ✅ Three chunking strategies: fixed-size, sliding-window, paragraph
-- ✅ Recall-based evaluation with test JSON files
-- ✅ CLI with table/JSON/CSV output formats
-- ✅ Realistic example corpus included
-- ✅ Optional tiktoken support for precise token-based chunking
+## ✨ Features
+
+- 📄 Parse and clean Markdown files
+- ✂️ Multiple chunking strategies:
+  - `fixed-size`: Split by fixed word/token count
+  - `sliding-window`: Overlapping chunks for context preservation
+  - `paragraph`: Natural paragraph boundaries
+- 🎯 **Token-based chunking** with tiktoken (OpenAI models: GPT-3.5, GPT-4, etc.)
+- 🎨 **Model selection** via `--tiktoken-model` flag
+- 📊 Recall-based evaluation with test JSON files
+- 🌈 Beautiful CLI output with Rich tables
+- 📈 Compare all strategies with `--strategy all`
+- 💾 Export results as JSON or CSV
 
 ### Demo
 ![rag-chunk demo](demo.gif)
 
 ## 🚀 Roadmap
 
-`rag-chunk` is actively developed! Here's the plan to move from a basic tool to a full-featured chunking workbench.
+`rag-chunk` is actively developed! Here's the plan to move from a useful tool to a full-featured chunking workbench.
 
-### ✅ Version 0.1 – Launched
-* [x] Core CLI engine (`click`)
-* [x] Markdown (`.md`) file parsing (`mistune`)
-* [x] Basic chunking strategies: `fixed-size` and `paragraph` (word-based)
+### ✅ Version 0.1.0 – Launched
+* [x] Core CLI engine (`argparse`)
+* [x] Markdown (`.md`) file parsing
+* [x] Basic chunking strategies: `fixed-size`, `sliding-window`, and `paragraph` (word-based)
 * [x] Evaluation harness: calculate **Recall score** from a `test-file.json`
-* [x] **PyPI Publication:** Installable via `pip install rag-chunk`
+* [x] Beautiful CLI output (`rich` tables)
+* [x] Published on PyPI: `pip install rag-chunk`
 
-### 🎯 Version 0.2 – In Progress
-* [x] CLI output formatting (`rich` tables)
-* [x] **Demo GIF:** Showcase the tool in action in the README
-* [x] **`tiktoken` Support:** Add `--use-tiktoken` flag for precise, token-based chunking
-* [ ] CLI/UX improvements and bug fixes
+### ✅ Version 0.2.0 – Completed
+* [x] **Tiktoken Support:** Added `--use-tiktoken` flag for precise token-based chunking
+* [x] **Model Selection:** Added `--tiktoken-model` to choose tokenization model (default: `gpt-3.5-turbo`)
+* [x] **Improved Documentation:** Updated README with tiktoken usage examples and comparisons
+* [x] **Enhanced Testing:** Added comprehensive unit tests for token-based chunking
+* [x] **Optional Dependencies:** tiktoken available via `pip install rag-chunk[tiktoken]`
 
-### 📈 Version 1.0 – Planned
-* [ ] **More Strategies:** Add advanced strategies like `RecursiveCharacterTextSplitter`, `HierarchicalChunker`
-* [ ] **More File Types:** Support `.txt`, `.rst`, and other plain text formats
-* [ ] **Export & Logging:** Save results as JSON/CSV, optional MLFlow integration
-* [ ] **Benchmarking Mode:** Compare chunking strategies automatically
+### 🎯 Version 0.3.0 – Planned
+* [ ] **Recursive Character Splitting:** Add LangChain's `RecursiveCharacterTextSplitter` for semantic chunking
+  - Install with: `pip install rag-chunk[langchain]`
+  - Strategy: `--strategy recursive-character`
+  - Works with both word-based and tiktoken modes
+* [ ] **More File Formats:** Support `.txt`, `.rst`, and other plain text formats
+* [ ] **Additional Metrics:** Add precision, F1-score, and chunk quality metrics
+
+### 📈 Version 1.0.0 – Future
+* [ ] **Advanced Strategies:** Hierarchical chunking, semantic similarity-based splitting
+* [ ] **Export Connectors:** Direct integration with vector stores (Pinecone, Weaviate, Chroma)
+* [ ] **Benchmarking Mode:** Automated strategy comparison with recommendations
+* [ ] **MLFlow Integration:** Track experiments and chunking configurations
+* [ ] **Performance Optimization:** Parallel processing for large document sets
 
 
 ### Installation
