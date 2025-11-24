@@ -9,6 +9,7 @@ from pathlib import Path
 from . import chunker
 from . import parser as mdparser
 from . import scorer
+from . import __version__
 
 try:
     from rich.console import Console
@@ -199,6 +200,7 @@ def _write_results(results, detail, output):
 def build_parser():
     """Build and return the CLI argument parser."""
     ap = argparse.ArgumentParser(prog="rag-chunk")
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = ap.add_subparsers(dest="command")
     analyze_p = sub.add_parser("analyze", help="Analyze a folder of markdown files")
     analyze_p.add_argument("folder", type=str, help="Folder containing .md files")

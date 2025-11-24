@@ -1,6 +1,6 @@
 # rag-chunk
 
-**Current Version: 0.2.0** 🎉
+**Current Version: 0.3.0** 🎉
 
 CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) pipelines with token-accurate chunking support.
 
@@ -42,13 +42,13 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 * [x] **Enhanced Testing:** Added comprehensive unit tests for token-based chunking
 * [x] **Optional Dependencies:** tiktoken available via `pip install rag-chunk[tiktoken]`
 
-### 🎯 Version 0.3.0 – Planned
-* [ ] **Recursive Character Splitting:** Add LangChain's `RecursiveCharacterTextSplitter` for semantic chunking
+### ✅ Version 0.3.0 – Released
+* [x] **Recursive Character Splitting:** Add LangChain's `RecursiveCharacterTextSplitter` for semantic chunking
   - Install with: `pip install rag-chunk[langchain]`
   - Strategy: `--strategy recursive-character`
   - Works with both word-based and tiktoken modes
-* [ ] **More File Formats:** Support `.txt`, `.rst`, and other plain text formats
-* [ ] **Additional Metrics:** Add precision, F1-score, and chunk quality metrics
+* [x] **More File Formats:** Support `.txt` files
+* [x] **Additional Metrics:** Add precision, F1-score, and chunk quality metrics
 
 ### 📈 Version 1.0.0 – Future
 * [ ] **Advanced Strategies:** Hierarchical chunking, semantic similarity-based splitting
