@@ -43,8 +43,8 @@ def test_recall():
     questions = [
         {"question": "What about generation?", "relevant": ["generation", "retrieval"]}
     ]
-    avg, _ = scorer.evaluate_strategy(chunks, questions, top_k=1)
-    assert 0.0 <= avg <= 1.0
+    metrics, _ = scorer.evaluate_strategy(chunks, questions, top_k=1)
+    assert 0.0 <= metrics["avg_recall"] <= 1.0
 
 
 def test_token_counting_without_tiktoken():
@@ -85,3 +85,85 @@ def test_sliding_window_with_tiktoken_flag():
         text, chunk_size=4, overlap=1, use_tiktoken=False
     )
     assert len(chunks) > 0
+
+
+def test_hierarchical_chunking_sections():
+    """Test hierarchical chunking with sections."""
+    text = """# Introduction
+This is the introduction paragraph.
+
+## Section 1
+First section content.
+
+## Section 2
+Second section content."""
+    
+    chunks = chunker.hierarchical_chunk(text, levels=['section'])
+    assert len(chunks) > 0
+    # Check that chunks have expected metadata
+    assert all('level' in chunk for chunk in chunks)
+    assert all('parent_id' in chunk for chunk in chunks)
+    assert all('token_count' in chunk for chunk in chunks)
+
+
+def test_hierarchical_chunking_paragraphs():
+    """Test hierarchical chunking with paragraphs."""
+    text = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+    
+    chunks = chunker.hierarchical_chunk(text, levels=['paragraph'])
+    assert len(chunks) >= 3
+    # Check paragraph level chunks exist
+    para_chunks = [c for c in chunks if c['level'] == 'paragraph']
+    assert len(para_chunks) >= 3
+
+
+def test_hierarchical_chunking_sentences():
+    """Test hierarchical chunking with sentences."""
+    text = "First sentence. Second sentence. Third sentence."
+    
+    chunks = chunker.hierarchical_chunk(text, levels=['sentence'])
+    assert len(chunks) >= 3
+    # Check sentence level chunks exist
+    sent_chunks = [c for c in chunks if c['level'] == 'sentence']
+    assert len(sent_chunks) >= 3
+
+
+def test_hierarchical_chunking_multi_level():
+    """Test hierarchical chunking with multiple levels."""
+    text = """# Header
+Paragraph one. Sentence two.
+
+Paragraph two. Sentence two."""
+    
+    chunks = chunker.hierarchical_chunk(text, levels=['section', 'paragraph', 'sentence'])
+    assert len(chunks) > 0
+    # Check multiple levels exist
+    levels = set(c['level'] for c in chunks)
+    assert 'section' in levels or 'paragraph' in levels or 'sentence' in levels
+
+
+def test_semantic_split_availability():
+    """Test that semantic split handles import gracefully."""
+    text = "First topic here. More on first topic. Now second topic begins. More on second."
+    
+    try:
+        chunks = chunker.semantic_split(text, threshold=0.5)
+        assert len(chunks) > 0
+        assert all('text' in chunk for chunk in chunks)
+        assert all('token_count' in chunk for chunk in chunks)
+    except ImportError as e:
+        # Expected if sentence-transformers is not installed
+        assert "sentence-transformers" in str(e).lower()
+
+
+def test_semantic_split_single_sentence():
+    """Test semantic split with single sentence fallback."""
+    text = "Only one sentence here."
+    
+    try:
+        chunks = chunker.semantic_split(text)
+        assert len(chunks) == 1
+        assert chunks[0]['text'] == text
+    except ImportError:
+        # Expected if sentence-transformers is not installed
+        pass

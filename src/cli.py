@@ -91,13 +91,25 @@ def _run_strategy(text, func, strat, args):
         strat: strategy name
         args: argparse.Namespace containing configuration
     """
-    chunks = func(
-        text,
-        chunk_size=args.chunk_size,
-        overlap=args.overlap,
-        use_tiktoken=getattr(args, "use_tiktoken", False),
-        model=getattr(args, "tiktoken_model", "gpt-3.5-turbo"),
-    )
+    # Build kwargs for strategy function
+    kwargs = {
+        'chunk_size': args.chunk_size,
+        'overlap': args.overlap,
+        'use_tiktoken': getattr(args, "use_tiktoken", False),
+        'model': getattr(args, "tiktoken_model", "gpt-3.5-turbo"),
+    }
+
+    # Add hierarchical-specific parameters
+    if strat == "hierarchical":
+        levels_str = getattr(args, "hierarchical_levels", "section,paragraph")
+        kwargs['levels'] = [l.strip() for l in levels_str.split(',') if l.strip()]
+
+    # Add semantic-specific parameters
+    if strat == "semantic-embedding":
+        kwargs['semantic_model'] = getattr(args, "semantic_model", "all-MiniLM-L6-v2")
+        kwargs['threshold'] = getattr(args, "semantic_threshold", 0.7)
+
+    chunks = func(text, **kwargs)
     outdir = write_chunks(chunks, strat)
     questions = (
         scorer.load_test_file(args.test_file)
@@ -213,6 +225,8 @@ def build_parser():
             "sliding-window",
             "paragraph",
             "recursive-character",
+            "hierarchical",
+            "semantic-embedding",
             "all",
         ],
         help="Chunking strategy or all",
@@ -249,6 +263,24 @@ def build_parser():
         default="table",
         choices=["table", "json", "csv"],
         help="Output format",
+    )
+    analyze_p.add_argument(
+        "--hierarchical-levels",
+        type=str,
+        default="section,paragraph",
+        help="Comma-separated list of levels for hierarchical chunking: section, paragraph, sentence (default: section,paragraph)",
+    )
+    analyze_p.add_argument(
+        "--semantic-model",
+        type=str,
+        default="all-MiniLM-L6-v2",
+        help="Sentence-transformers model for semantic-embedding strategy (default: all-MiniLM-L6-v2)",
+    )
+    analyze_p.add_argument(
+        "--semantic-threshold",
+        type=float,
+        default=0.7,
+        help="Similarity threshold for semantic-embedding strategy (0.0-1.0, default: 0.7)",
     )
     return ap
 

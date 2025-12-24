@@ -13,6 +13,9 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
   - `fixed-size`: Split by fixed word/token count
   - `sliding-window`: Overlapping chunks for context preservation
   - `paragraph`: Natural paragraph boundaries
+  - `recursive-character`: Semantic-aware splitting with LangChain
+  - `hierarchical`: Multi-level hierarchy (section → paragraph → sentence)
+  - `semantic-embedding`: Topic boundary detection using sentence embeddings
 - 🎯 **Token-based chunking** with tiktoken (OpenAI models: GPT-3.5, GPT-4, etc.)
 - 🎨 **Model selection** via `--tiktoken-model` flag
 - 📊 Recall-based evaluation with test JSON files
@@ -50,8 +53,11 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 * [x] **More File Formats:** Support `.txt` files
 * [x] **Additional Metrics:** Add precision, F1-score, and chunk quality metrics
 
-### 📈 Version 1.0.0 – Future
-* [ ] **Advanced Strategies:** Hierarchical chunking, semantic similarity-based splitting
+### 📈 Version 1.0.0 – In Progress
+* [x] **Advanced Strategies:** Hierarchical chunking, semantic similarity-based splitting
+  - Install with: `pip install rag-chunk[embeddings]` for semantic features
+  - Strategy: `--strategy hierarchical` with configurable levels
+  - Strategy: `--strategy semantic-embedding` with tunable threshold
 * [ ] **Export Connectors:** Direct integration with vector stores (Pinecone, Weaviate, Chroma)
 * [ ] **Benchmarking Mode:** Automated strategy comparison with recommendations
 * [ ] **MLFlow Integration:** Track experiments and chunking configurations
@@ -81,6 +87,24 @@ For token-based chunking with tiktoken support:
 pip install rag-chunk[tiktoken]
 ```
 
+For semantic-embedding strategy with sentence-transformers:
+
+```bash
+pip install rag-chunk[embeddings]
+```
+
+For LangChain recursive character splitting:
+
+```bash
+pip install rag-chunk[langchain]
+```
+
+Install all optional dependencies:
+
+```bash
+pip install rag-chunk[all]
+```
+
 Or install from source:
 
 ```bash
@@ -92,6 +116,8 @@ Development mode:
 ```bash
 pip install -e .
 pip install -e .[tiktoken]  # with tiktoken support
+pip install -e .[embeddings]  # with sentence-transformers
+pip install -e .[all]  # with all optional dependencies
 ```
 
 ## Quick Start
@@ -110,13 +136,17 @@ rag-chunk analyze <folder> [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--strategy` | Chunking strategy: `fixed-size`, `sliding-window`, `paragraph`, or `all` | `fixed-size` |
+| `--strategy` | Chunking strategy: `fixed-size`, `sliding-window`, `paragraph`, `recursive-character`, `hierarchical`, `semantic-embedding`, or `all` | `fixed-size` |
 | `--chunk-size` | Number of words or tokens per chunk | `200` |
 | `--overlap` | Number of overlapping words or tokens (for sliding-window) | `50` |
 | `--use-tiktoken` | Use tiktoken for precise token-based chunking (requires `pip install rag-chunk[tiktoken]`) | `False` |
+| `--tiktoken-model` | Model name for tiktoken encoding | `gpt-3.5-turbo` |
 | `--test-file` | Path to JSON test file with questions | None |
 | `--top-k` | Number of chunks to retrieve per question | `3` |
 | `--output` | Output format: `table`, `json`, or `csv` | `table` |
+| `--hierarchical-levels` | Comma-separated list of levels for hierarchical chunking: `section`, `paragraph`, `sentence` | `section,paragraph` |
+| `--semantic-model` | Sentence-transformers model for semantic-embedding strategy | `all-MiniLM-L6-v2` |
+| `--semantic-threshold` | Similarity threshold for semantic-embedding strategy (0.0-1.0) | `0.7` |
 
 If `--strategy all` is chosen, every strategy is run with the supplied chunk-size and overlap where applicable.
 
@@ -331,12 +361,106 @@ Directory where chunks are written as individual `.txt` files for inspection.
 | **fixed-size** | Uniform processing, consistent latency | 150-250 words |
 | **sliding-window** | Preserving context at boundaries, dense text | 120-200 words, 20-30% overlap |
 | **paragraph** | Well-structured docs with clear sections | N/A (variable) |
+| **recursive-character** | Semantic coherence with flexible boundaries | 200-500 characters |
+| **hierarchical** | Multi-resolution retrieval, document navigation | N/A (multi-level) |
+| **semantic-embedding** | Topic-driven splitting, coherent segments | N/A (threshold-based) |
 
 **General guidelines:**
 1. Start with **paragraph** for markdown with clear structure
 2. Use **sliding-window** if paragraphs are too long (>300 words)
 3. Use **fixed-size** as baseline for comparison
-4. Always test with representative questions from your domain
+4. Use **hierarchical** when you need multi-level document structure for context
+5. Use **semantic-embedding** for dynamic topic-based segmentation
+6. Always test with representative questions from your domain
+
+## Advanced Strategies
+
+### Hierarchical Chunking
+
+Hierarchical chunking creates multi-level document hierarchies, splitting text by sections, paragraphs, and sentences. Each chunk includes rich metadata for multi-resolution retrieval.
+
+**Installation:**
+```bash
+# No additional dependencies required - uses built-in functionality
+pip install rag-chunk
+```
+
+**Usage:**
+```bash
+# Default: section + paragraph levels
+rag-chunk analyze examples/ --strategy hierarchical
+
+# All levels: section + paragraph + sentence
+rag-chunk analyze examples/ --strategy hierarchical --hierarchical-levels "section,paragraph,sentence"
+
+# Only paragraphs
+rag-chunk analyze examples/ --strategy hierarchical --hierarchical-levels "paragraph"
+```
+
+**Features:**
+- Extracts markdown headers (h1-h6) as sections
+- Preserves document structure and hierarchy
+- Each chunk includes metadata: `id`, `parent_id`, `level`, `start_char`, `end_char`, `token_count`, `source_path`
+- Enables parent-child relationships for context reconstruction
+- Fallback to paragraph splitting for unstructured documents
+
+**Best for:**
+- Technical documentation with clear section hierarchy
+- Academic papers and reports
+- Multi-level document indexing
+- Context-aware retrieval (retrieve children of a parent chunk)
+
+### Semantic Similarity-based Splitting
+
+Semantic splitting detects topic boundaries using sentence embeddings and cosine similarity. It splits text where semantic similarity drops below a threshold, creating coherent topic-based chunks.
+
+**Installation:**
+```bash
+pip install rag-chunk[embeddings]
+```
+
+**Usage:**
+```bash
+# Default: all-MiniLM-L6-v2 model, threshold=0.7
+rag-chunk analyze examples/ --strategy semantic-embedding
+
+# Custom threshold (lower = more splits)
+rag-chunk analyze examples/ --strategy semantic-embedding --semantic-threshold 0.6
+
+# Different embedding model
+rag-chunk analyze examples/ --strategy semantic-embedding --semantic-model "paraphrase-MiniLM-L6-v2"
+```
+
+**Features:**
+- Uses sentence-transformers for high-quality embeddings
+- Detects topic boundaries via changepoint detection
+- Cosine similarity between consecutive sentences
+- Splits when similarity drops below threshold
+- Creates variable-length, semantically coherent chunks
+
+**Parameters:**
+- `--semantic-model`: Choose from [sentence-transformers models](https://www.sbert.net/docs/pretrained_models.html)
+  - `all-MiniLM-L6-v2` (default): Fast, 80MB, good quality
+  - `all-mpnet-base-v2`: Highest quality, 420MB, slower
+  - `paraphrase-MiniLM-L6-v2`: Optimized for paraphrase detection
+- `--semantic-threshold`: Similarity threshold (0.0-1.0)
+  - Higher (0.8-0.9): Fewer splits, longer chunks
+  - Medium (0.6-0.7): Balanced
+  - Lower (0.4-0.5): More splits, shorter chunks
+
+**Best for:**
+- Documents with shifting topics
+- News articles and blog posts
+- Transcripts and conversational text
+- Content without clear structural markers
+- Dynamic topic segmentation
+
+**Example Output:**
+```bash
+rag-chunk analyze examples/ --strategy semantic-embedding --semantic-threshold 0.65 --test-file examples/questions.json
+```
+
+The semantic strategy adapts to content, creating natural topic boundaries rather than arbitrary character limits.
 
 ## Extending
 
