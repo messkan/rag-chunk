@@ -290,7 +290,7 @@ def hierarchical_chunk(
         if not sections or (len(sections) == 1 and sections[0][0] == "" and sections[0][2] == 0):
             sections = [("", text, 0)]
 
-        for _, (header, content, level) in enumerate(sections):
+        for header, content, level in sections:
             if not content.strip():
                 continue
 
