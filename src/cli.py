@@ -98,17 +98,17 @@ def _run_strategy(text, func, strat, args):
         'use_tiktoken': getattr(args, "use_tiktoken", False),
         'model': getattr(args, "tiktoken_model", "gpt-3.5-turbo"),
     }
-    
+
     # Add hierarchical-specific parameters
     if strat == "hierarchical":
         levels_str = getattr(args, "hierarchical_levels", "section,paragraph")
         kwargs['levels'] = [l.strip() for l in levels_str.split(',') if l.strip()]
-    
+
     # Add semantic-specific parameters
     if strat == "semantic-embedding":
         kwargs['semantic_model'] = getattr(args, "semantic_model", "all-MiniLM-L6-v2")
         kwargs['threshold'] = getattr(args, "semantic_threshold", 0.7)
-    
+
     chunks = func(text, **kwargs)
     outdir = write_chunks(chunks, strat)
     questions = (

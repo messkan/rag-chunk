@@ -207,7 +207,7 @@ def _split_into_sentences(text: str) -> List[str]:
 
 def _extract_markdown_sections(text: str) -> List[Tuple[str, str, int]]:
     """Extract markdown sections based on headers.
-    
+
     Returns:
         List of (header_text, content, level) tuples where level is 1-6 for h1-h6
     """
@@ -216,7 +216,7 @@ def _extract_markdown_sections(text: str) -> List[Tuple[str, str, int]]:
     current_header = ""
     current_content = []
     current_level = 0
-    
+
     for line in lines:
         # Check for ATX-style headers (# Header)
         header_match = re.match(r'^(#{1,6})\s+(.+)$', line)
@@ -234,7 +234,7 @@ def _extract_markdown_sections(text: str) -> List[Tuple[str, str, int]]:
             current_content = []
         else:
             current_content.append(line)
-    
+
     # Add final section
     if current_content:
         sections.append((
@@ -242,7 +242,7 @@ def _extract_markdown_sections(text: str) -> List[Tuple[str, str, int]]:
             '\n'.join(current_content).strip(),
             current_level
         ))
-    
+
     return sections
 
 
@@ -254,9 +254,9 @@ def hierarchical_chunk(
     source_path: str = "",
 ) -> List[Dict]:
     """Build multi-level chunk hierarchies.
-    
+
     Splits text hierarchically: section → paragraph → sentence
-    
+
     Args:
         text: Text to chunk
         levels: List of levels to split by. Options: 'section', 'paragraph', 'sentence'
@@ -264,7 +264,7 @@ def hierarchical_chunk(
         use_tiktoken: If True, use tiktoken for token counting
         model: Model name for tiktoken encoding
         source_path: Optional source file path for metadata
-        
+
     Returns:
         List of chunk dictionaries with metadata:
         - id: unique chunk identifier
@@ -278,26 +278,26 @@ def hierarchical_chunk(
     """
     if levels is None:
         levels = ['section', 'paragraph']
-    
+
     chunks = []
     chunk_id = 0
-    
+
     # Level 1: Try to split by sections (markdown headers)
     if 'section' in levels:
         sections = _extract_markdown_sections(text)
-        
+
         # If no sections found, fallback to treating entire text as one section
         if not sections or (len(sections) == 1 and sections[0][0] == "" and sections[0][2] == 0):
             sections = [("", text, 0)]
-        
-        for sec_idx, (header, content, level) in enumerate(sections):
+
+        for _, (header, content, level) in enumerate(sections):
             if not content.strip():
                 continue
-                
+
             # Find position in original text
             start_pos = text.find(content)
             end_pos = start_pos + len(content) if start_pos >= 0 else len(content)
-            
+
             section_chunk = {
                 "id": chunk_id,
                 "text": content,
@@ -313,15 +313,15 @@ def hierarchical_chunk(
             chunks.append(section_chunk)
             section_parent_id = chunk_id
             chunk_id += 1
-            
+
             # Level 2: Split sections into paragraphs
             if 'paragraph' in levels:
                 paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
-                
+
                 for para in paragraphs:
                     para_start = text.find(para)
                     para_end = para_start + len(para) if para_start >= 0 else len(para)
-                    
+
                     para_chunk = {
                         "id": chunk_id,
                         "text": para,
@@ -335,15 +335,15 @@ def hierarchical_chunk(
                     chunks.append(para_chunk)
                     para_parent_id = chunk_id
                     chunk_id += 1
-                    
+
                     # Level 3: Split paragraphs into sentences
                     if 'sentence' in levels:
                         sentences = _split_into_sentences(para)
-                        
+
                         for sent in sentences:
                             sent_start = text.find(sent)
                             sent_end = sent_start + len(sent) if sent_start >= 0 else len(sent)
-                            
+
                             sent_chunk = {
                                 "id": chunk_id,
                                 "text": sent,
@@ -356,15 +356,15 @@ def hierarchical_chunk(
                             }
                             chunks.append(sent_chunk)
                             chunk_id += 1
-    
+
     elif 'paragraph' in levels:
         # Start with paragraphs if 'section' not in levels
         paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-        
+
         for para in paragraphs:
             para_start = text.find(para)
             para_end = para_start + len(para) if para_start >= 0 else len(para)
-            
+
             para_chunk = {
                 "id": chunk_id,
                 "text": para,
@@ -378,14 +378,14 @@ def hierarchical_chunk(
             chunks.append(para_chunk)
             para_parent_id = chunk_id
             chunk_id += 1
-            
+
             if 'sentence' in levels:
                 sentences = _split_into_sentences(para)
-                
+
                 for sent in sentences:
                     sent_start = text.find(sent)
                     sent_end = sent_start + len(sent) if sent_start >= 0 else len(sent)
-                    
+
                     sent_chunk = {
                         "id": chunk_id,
                         "text": sent,
@@ -398,15 +398,15 @@ def hierarchical_chunk(
                     }
                     chunks.append(sent_chunk)
                     chunk_id += 1
-    
+
     elif 'sentence' in levels:
         # Start with sentences if neither section nor paragraph in levels
         sentences = _split_into_sentences(text)
-        
+
         for sent in sentences:
             sent_start = text.find(sent)
             sent_end = sent_start + len(sent) if sent_start >= 0 else len(sent)
-            
+
             sent_chunk = {
                 "id": chunk_id,
                 "text": sent,
@@ -419,7 +419,7 @@ def hierarchical_chunk(
             }
             chunks.append(sent_chunk)
             chunk_id += 1
-    
+
     # Fallback: if no chunks created, return entire text as one chunk
     if not chunks:
         chunks.append({
@@ -432,7 +432,7 @@ def hierarchical_chunk(
             "token_count": count_tokens(text, use_tiktoken=use_tiktoken, model=model),
             "source_path": source_path,
         })
-    
+
     return chunks
 
 
@@ -444,17 +444,17 @@ def semantic_split(
     tiktoken_model: str = "gpt-3.5-turbo",
 ) -> List[Dict]:
     """Detect topic boundaries via semantic embeddings.
-    
+
     Splits text at points where similarity with neighboring sentences drops
     below threshold (changepoint detection).
-    
+
     Args:
         text: Text to chunk
         model: Sentence-transformers model name (default: 'all-MiniLM-L6-v2')
         threshold: Similarity threshold for splitting (0.0-1.0, default: 0.7)
         use_tiktoken: If True, use tiktoken for token counting
         tiktoken_model: Model name for tiktoken encoding
-        
+
     Returns:
         List of chunk dictionaries with 'id', 'text', and 'token_count' keys
     """
@@ -463,10 +463,10 @@ def semantic_split(
             "sentence-transformers is required for semantic-embedding strategy. "
             "Install with: pip install rag-chunk[embeddings]"
         )
-    
+
     # Split into sentences
     sentences = _split_into_sentences(text)
-    
+
     if len(sentences) <= 1:
         # Not enough sentences to split
         return [{
@@ -474,11 +474,11 @@ def semantic_split(
             "text": text,
             "token_count": count_tokens(text, use_tiktoken=use_tiktoken, model=tiktoken_model),
         }]
-    
+
     # Load model and compute embeddings
     embedder = SentenceTransformer(model)
     embeddings = embedder.encode(sentences)
-    
+
     # Compute cosine similarities between consecutive sentences
     similarities = []
     for i in range(len(embeddings) - 1):
@@ -487,14 +487,14 @@ def semantic_split(
             np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[i + 1])
         )
         similarities.append(sim)
-    
+
     # Find split points where similarity drops below threshold
     split_indices = [0]  # Always start at beginning
     for i, sim in enumerate(similarities):
         if sim < threshold:
             split_indices.append(i + 1)
     split_indices.append(len(sentences))  # Always end at the end
-    
+
     # Create chunks from split points
     chunks = []
     for i in range(len(split_indices) - 1):
@@ -502,7 +502,7 @@ def semantic_split(
         end_idx = split_indices[i + 1]
         chunk_sentences = sentences[start_idx:end_idx]
         chunk_text = ' '.join(chunk_sentences)
-        
+
         chunks.append({
             "id": i,
             "text": chunk_text,
@@ -512,7 +512,7 @@ def semantic_split(
                 model=tiktoken_model
             ),
         })
-    
+
     return chunks
 
 
