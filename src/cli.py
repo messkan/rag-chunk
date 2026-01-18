@@ -104,8 +104,11 @@ def _run_strategy(text, func, strat, args):
         if getattr(args, "test_file", None)
         else None
     )
+    use_embeddings = getattr(args, "use_embeddings", False)
     if questions:
-        metrics, per_questions = scorer.evaluate_strategy(chunks, questions, args.top_k)
+        metrics, per_questions = scorer.evaluate_strategy(
+            chunks, questions, args.top_k, use_embeddings
+        )
     else:
         metrics = {"avg_recall": 0.0, "avg_precision": 0.0, "avg_f1": 0.0}
         per_questions = []
@@ -213,6 +216,8 @@ def build_parser():
             "sliding-window",
             "paragraph",
             "recursive-character",
+            "header",
+            "semantic",
             "all",
         ],
         help="Chunking strategy or all",
@@ -236,6 +241,11 @@ def build_parser():
         type=str,
         default="gpt-3.5-turbo",
         help="Model name for tiktoken encoding (default: gpt-3.5-turbo)",
+    )
+    analyze_p.add_argument(
+        "--use-embeddings",
+        action="store_true",
+        help="Use semantic embeddings for retrieval instead of lexical matching (requires sentence-transformers)",
     )
     analyze_p.add_argument(
         "--test-file", type=str, default="", help="Path to JSON test file"

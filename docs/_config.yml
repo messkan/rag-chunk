@@ -1,0 +1,6 @@
+theme: jekyll-theme-cayman
+title: rag-chunk
+description: Advanced Markdown Chunking & Evaluation for RAG Pipelines
+show_downloads: true
+github:
+  is_project_page: true

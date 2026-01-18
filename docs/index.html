@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rag-chunk - Advanced RAG Chunking Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 4rem 0 3rem;
+            color: white;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tagline {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 2rem;
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.8rem 2rem;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .content {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            margin-top: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 2rem;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .code-block code {
+            font-size: 0.9rem;
+        }
+
+        h2 {
+            color: #667eea;
+            margin: 2rem 0 1rem;
+            font-size: 2rem;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin: 1.5rem 0 0.8rem;
+            font-size: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        table th,
+        table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .strategy-comparison {
+            margin: 2rem 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: white;
+            margin-top: 2rem;
+        }
+
+        .highlight {
+            background: #fef3c7;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 rag-chunk</h1>
+            <p class="tagline">Advanced Markdown Chunking & Evaluation for RAG Pipelines</p>
+            <div class="version-badge">v0.4.0</div>
+            <div class="buttons">
+                <a href="https://pypi.org/project/rag-chunk/" class="btn btn-primary">Install from PyPI</a>
+                <a href="https://github.com/messkan/rag-chunk" class="btn btn-secondary">View on GitHub</a>
+            </div>
+        </header>
+
+        <div class="content">
+            <h2>✨ What is rag-chunk?</h2>
+            <p>
+                <strong>rag-chunk</strong> is a powerful CLI tool designed for developers building Retrieval-Augmented Generation (RAG) systems. 
+                It helps you parse, chunk, and evaluate Markdown documents using multiple sophisticated strategies, ensuring optimal retrieval performance.
+            </p>
+
+            <h2>🚀 Quick Start</h2>
+            <div class="code-block">
+                <code># Install with all features<br>
+pip install rag-chunk[all]<br><br>
+# Analyze with semantic chunking and embedding-based retrieval<br>
+rag-chunk analyze examples/ \<br>
+  --strategy semantic \<br>
+  --use-embeddings \<br>
+  --test-file questions.json \<br>
+  --top-k 3</code>
+            </div>
+
+            <h2>✨ Features</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <div class="feature-title">6 Chunking Strategies</div>
+                    <p>Fixed-size, sliding-window, paragraph, recursive-character, header-aware, and semantic chunking</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <div class="feature-title">Semantic Intelligence</div>
+                    <p>Embedding-based chunking and retrieval using sentence-transformers</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-title">Advanced Metrics</div>
+                    <p>Precision, Recall, F1-score evaluation with test questions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">Token-Accurate</div>
+                    <p>Tiktoken integration for precise GPT-3.5, GPT-4 token counting</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">Header-Aware</div>
+                    <p>Preserve document structure by splitting at markdown headers</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-title">Compare All Strategies</div>
+                    <p>Run all strategies at once and compare results side-by-side</p>
+                </div>
+            </div>
+
+            <h2>📚 Chunking Strategies</h2>
+            
+            <div class="strategy-comparison">
+                <h3>1. Fixed-Size Chunking</h3>
+                <p>Split text into equal-sized chunks by token/word count.</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy fixed-size --chunk-size 200</code>
+                </div>
+                <p><strong>Best for:</strong> Consistent chunk sizes, simple documents</p>
+
+                <h3>2. Sliding Window</h3>
+                <p>Overlapping chunks to preserve context at boundaries.</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy sliding-window --chunk-size 200 --overlap 50</code>
+                </div>
+                <p><strong>Best for:</strong> Preventing information loss at chunk boundaries</p>
+
+                <h3>3. Paragraph-Based</h3>
+                <p>Split by natural paragraph boundaries (double newlines).</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy paragraph</code>
+                </div>
+                <p><strong>Best for:</strong> Well-structured documents with clear paragraphs</p>
+
+                <h3>4. Recursive Character</h3>
+                <p>LangChain's recursive splitter for semantic coherence.</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy recursive-character --chunk-size 200</code>
+                </div>
+                <p><strong>Best for:</strong> Maintaining semantic meaning at split points</p>
+
+                <h3>5. Header-Aware ⭐ NEW</h3>
+                <p>Split by markdown headers while respecting size limits.</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy header --chunk-size 300</code>
+                </div>
+                <p><strong>Best for:</strong> Technical documentation, structured markdown files</p>
+
+                <h3>6. Semantic Chunking ⭐ NEW</h3>
+                <p>Use sentence embeddings to split at semantic boundaries.</p>
+                <div class="code-block">
+                    <code>rag-chunk analyze docs/ --strategy semantic --chunk-size 200</code>
+                </div>
+                <p><strong>Best for:</strong> Maximum retrieval quality, topic-based splitting</p>
+            </div>
+
+            <h2>🧠 Embedding-Based Retrieval</h2>
+            <p>
+                Traditional lexical matching (keyword overlap) can miss semantically similar content. 
+                Enable <span class="highlight">--use-embeddings</span> to use sentence-transformers for semantic similarity:
+            </p>
+            <div class="code-block">
+                <code># Compare lexical vs semantic retrieval<br>
+rag-chunk analyze docs/ --strategy all --test-file questions.json --use-embeddings</code>
+            </div>
+
+            <h2>📊 Evaluation Metrics</h2>
+            <p>Evaluate your chunking strategy with a test file containing questions and relevant phrases:</p>
+            <div class="code-block">
+                <code>{<br>
+  "questions": [<br>
+    {<br>
+      "question": "What are the stages of RAG?",<br>
+      "relevant": ["indexing", "retrieval", "generation"]<br>
+    }<br>
+  ]<br>
+}</code>
+            </div>
+            <p>Metrics calculated: <strong>Precision</strong>, <strong>Recall</strong>, <strong>F1-score</strong></p>
+
+            <h2>⚙️ Installation Options</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Package</th>
+                        <th>Command</th>
+                        <th>Features</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Base</td>
+                        <td><code>pip install rag-chunk</code></td>
+                        <td>Core chunking strategies</td>
+                    </tr>
+                    <tr>
+                        <td>Tiktoken</td>
+                        <td><code>pip install rag-chunk[tiktoken]</code></td>
+                        <td>Token-accurate chunking</td>
+                    </tr>
+                    <tr>
+                        <td>Semantic</td>
+                        <td><code>pip install rag-chunk[semantic]</code></td>
+                        <td>Semantic chunking & retrieval</td>
+                    </tr>
+                    <tr>
+                        <td>LangChain</td>
+                        <td><code>pip install rag-chunk[langchain]</code></td>
+                        <td>Recursive character splitting</td>
+                    </tr>
+                    <tr>
+                        <td>All Features</td>
+                        <td><code>pip install rag-chunk[all]</code></td>
+                        <td>Everything included</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>🎯 CLI Reference</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Option</th>
+                        <th>Description</th>
+                        <th>Default</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>--strategy</code></td>
+                        <td>Chunking strategy (or 'all')</td>
+                        <td>fixed-size</td>
+                    </tr>
+                    <tr>
+                        <td><code>--chunk-size</code></td>
+                        <td>Tokens/words per chunk</td>
+                        <td>200</td>
+                    </tr>
+                    <tr>
+                        <td><code>--overlap</code></td>
+                        <td>Overlap for sliding window</td>
+                        <td>50</td>
+                    </tr>
+                    <tr>
+                        <td><code>--use-tiktoken</code></td>
+                        <td>Enable token-based chunking</td>
+                        <td>False</td>
+                    </tr>
+                    <tr>
+                        <td><code>--use-embeddings</code></td>
+                        <td>Semantic similarity retrieval</td>
+                        <td>False</td>
+                    </tr>
+                    <tr>
+                        <td><code>--test-file</code></td>
+                        <td>Path to evaluation JSON</td>
+                        <td>None</td>
+                    </tr>
+                    <tr>
+                        <td><code>--top-k</code></td>
+                        <td>Chunks to retrieve per query</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td><code>--output</code></td>
+                        <td>Format (table/json/csv)</td>
+                        <td>table</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>💡 Best Practices</h2>
+            <ul>
+                <li><strong>Start with header-aware</strong> for structured markdown docs</li>
+                <li><strong>Use semantic chunking</strong> for optimal retrieval quality</li>
+                <li><strong>Enable --use-embeddings</strong> when evaluating with test questions</li>
+                <li><strong>Experiment with chunk sizes</strong>: 150-300 tokens for technical docs</li>
+                <li><strong>Use --strategy all</strong> to compare all methods at once</li>
+                <li><strong>Add overlap (30-50)</strong> for sliding-window to preserve context</li>
+            </ul>
+
+            <h2>🔗 Links</h2>
+            <ul>
+                <li><a href="https://pypi.org/project/rag-chunk/">PyPI Package</a></li>
+                <li><a href="https://github.com/messkan/rag-chunk">GitHub Repository</a></li>
+                <li><a href="https://github.com/messkan/rag-chunk/issues">Report Issues</a></li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>Made with ❤️ for the RAG community</p>
+            <p>MIT License © 2026</p>
+        </footer>
+    </div>
+</body>
+</html>

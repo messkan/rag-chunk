@@ -1,21 +1,27 @@
 # rag-chunk
 
-**Current Version: 0.3.0** 🎉
+**Current Version: 0.4.0** 🎉
 
-CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) pipelines with token-accurate chunking support.
+CLI tool to parse, chunk, and evaluate Markdown documents for Retrieval-Augmented Generation (RAG) pipelines with token-accurate chunking and semantic intelligence.
 
 Available on PyPI: https://pypi.org/project/rag-chunk/
+
+📚 **[Documentation](https://messkan.github.io/rag-chunk/)** | 🐙 **[GitHub](https://github.com/messkan/rag-chunk)**
 
 ## ✨ Features
 
 - 📄 Parse and clean Markdown files
-- ✂️ Multiple chunking strategies:
+- ✂️ **6 Chunking Strategies:**
   - `fixed-size`: Split by fixed word/token count
   - `sliding-window`: Overlapping chunks for context preservation
   - `paragraph`: Natural paragraph boundaries
+  - `recursive-character`: LangChain's semantic splitter
+  - `header`: **NEW** - Markdown header-aware splitting
+  - `semantic`: **NEW** - Embedding-based semantic boundaries
+- 🧠 **Semantic Intelligence:** Embedding-based chunking and retrieval
 - 🎯 **Token-based chunking** with tiktoken (OpenAI models: GPT-3.5, GPT-4, etc.)
 - 🎨 **Model selection** via `--tiktoken-model` flag
-- 📊 Recall-based evaluation with test JSON files
+- 📊 **Advanced Metrics:** Precision, Recall, F1-score evaluation
 - 🌈 Beautiful CLI output with Rich tables
 - 📈 Compare all strategies with `--strategy all`
 - 💾 Export results as JSON or CSV
@@ -50,10 +56,25 @@ Available on PyPI: https://pypi.org/project/rag-chunk/
 * [x] **More File Formats:** Support `.txt` files
 * [x] **Additional Metrics:** Add precision, F1-score, and chunk quality metrics
 
-### 📈 Version 1.0.0 – Future
-* [ ] **Advanced Strategies:** Hierarchical chunking, semantic similarity-based splitting
+### ✅ Version 0.4.0 – Released
+* [x] **Header-Aware Chunking:** Split by markdown headers while respecting size limits
+  - Strategy: `--strategy header`
+  - Preserves document structure with metadata
+* [x] **Semantic Chunking:** Use sentence embeddings to split at semantic boundaries
+  - Strategy: `--strategy semantic`
+  - Install with: `pip install rag-chunk[semantic]`
+  - Powered by sentence-transformers
+* [x] **Embedding-Based Retrieval:** Semantic similarity matching with `--use-embeddings`
+  - Superior to lexical matching for semantic queries
+  - Uses cosine similarity on sentence embeddings
+* [x] **Documentation Site:** Complete GitHub Pages documentation
+
+### 📈 Version 1.0.0 – Planned
+* [ ] **Chunk Size Optimizer:** Automated sweep to find optimal chunk size
+* [ ] **Visualization Dashboard:** HTML report with interactive charts
+* [ ] **Context Augmentation:** Add metadata (position, section, summaries) to chunks
 * [ ] **Export Connectors:** Direct integration with vector stores (Pinecone, Weaviate, Chroma)
-* [ ] **Benchmarking Mode:** Automated strategy comparison with recommendations
+* [ ] **Benchmarking Mode:** Statistical comparison with significance testing
 * [ ] **MLFlow Integration:** Track experiments and chunking configurations
 * [ ] **Performance Optimization:** Parallel processing for large document sets
 
@@ -72,32 +93,43 @@ pip install rag-chunk
 ## Installation
 
 ```bash
+# Base installation
 pip install rag-chunk
-```
 
-For token-based chunking with tiktoken support:
+# With all features (recommended)
+pip install rag-chunk[all]
 
-```bash
-pip install rag-chunk[tiktoken]
-```
-
-Or install from source:
-
-```bash
-pip install .
+# Or install specific features:
+pip install rag-chunk[tiktoken]    # Token-based chunking
+pip install rag-chunk[semantic]    # Semantic chunking & retrieval
+pip install rag-chunk[langchain]   # Recursive character splitting
 ```
 
 Development mode:
 
 ```bash
-pip install -e .
-pip install -e .[tiktoken]  # with tiktoken support
+pip install -e .[all]
 ```
 
 ## Quick Start
 
 ```bash
-rag-chunk analyze examples/ --strategy all --chunk-size 150 --overlap 30 --test-file examples/questions.json --top-k 3 --output table
+# Compare all strategies with semantic retrieval
+rag-chunk analyze examples/ \
+  --strategy all \
+  --use-embeddings \
+  --test-file examples/questions.json \
+  --top-k 3
+
+# Header-aware chunking for technical docs
+rag-chunk analyze docs/ --strategy header --chunk-size 300
+
+# Semantic chunking with embeddings
+rag-chunk analyze examples/ \
+  --strategy semantic \
+  --chunk-size 200 \
+  --use-embeddings \
+  --test-file questions.json
 ```
 
 ## CLI Usage
@@ -110,10 +142,12 @@ rag-chunk analyze <folder> [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--strategy` | Chunking strategy: `fixed-size`, `sliding-window`, `paragraph`, or `all` | `fixed-size` |
+| `--strategy` | Chunking strategy: `fixed-size`, `sliding-window`, `paragraph`, `recursive-character`, `header`, `semantic`, or `all` | `fixed-size` |
 | `--chunk-size` | Number of words or tokens per chunk | `200` |
-| `--overlap` | Number of overlapping words or tokens (for sliding-window) | `50` |
-| `--use-tiktoken` | Use tiktoken for precise token-based chunking (requires `pip install rag-chunk[tiktoken]`) | `False` |
+| `--overlap` | Number of overlapping words or tokens | `50` |
+| `--use-tiktoken` | Use tiktoken for precise token-based chunking | `False` |
+| `--tiktoken-model` | Model for tiktoken encoding | `gpt-3.5-turbo` |
+| `--use-embeddings` | Use semantic embeddings for retrieval (requires `sentence-transformers`) | `False` |
 | `--test-file` | Path to JSON test file with questions | None |
 | `--top-k` | Number of chunks to retrieve per question | `3` |
 | `--output` | Output format: `table`, `json`, or `csv` | `table` |
@@ -121,6 +155,40 @@ rag-chunk analyze <folder> [options]
 If `--strategy all` is chosen, every strategy is run with the supplied chunk-size and overlap where applicable.
 
 ## Examples
+
+### Header-Aware Chunking (NEW)
+
+Split by markdown headers while respecting chunk size limits:
+
+```bash
+rag-chunk analyze docs/ --strategy header --chunk-size 300
+```
+
+Preserves document structure with metadata about headers and hierarchy levels.
+
+### Semantic Chunking (NEW)
+
+Use sentence embeddings to split at semantic boundaries:
+
+```bash
+rag-chunk analyze examples/ --strategy semantic --chunk-size 200
+```
+
+Groups semantically similar sentences together, splitting when topic shifts occur.
+
+### Embedding-Based Retrieval (NEW)
+
+Compare lexical vs semantic retrieval:
+
+```bash
+# Lexical (keyword-based)
+rag-chunk analyze examples/ --strategy all --test-file questions.json
+
+# Semantic (embedding-based)
+rag-chunk analyze examples/ --strategy all --test-file questions.json --use-embeddings
+```
+
+Semantic retrieval typically achieves higher recall for conceptual queries.
 
 ### Basic Usage: Generate Chunks Only
 
@@ -148,11 +216,14 @@ rag-chunk analyze examples/ --strategy all --chunk-size 100 --overlap 20 --outpu
 
 **Output:**
 ```
-strategy       | chunks | avg_recall | saved                                 
----------------+--------+------------+---------------------------------------
-fixed-size     | 36     | 0.0        | .chunks/fixed-size-20251115-020156    
-sliding-window | 45     | 0.0        | .chunks/sliding-window-20251115-020156
-paragraph      | 12     | 0.0        | .chunks/paragraph-20251115-020156
+strategy           | chunks | avg_recall | avg_precision | avg_f1 | saved                                 
+-------------------+--------+------------+---------------+--------+---------------------------------------
+fixed-size         | 36     | 0.0        | 0.0           | 0.0    | .chunks/fixed-size-20251115-020156    
+sliding-window     | 45     | 0.0        | 0.0           | 0.0    | .chunks/sliding-window-20251115-020156
+paragraph          | 12     | 0.0        | 0.0           | 0.0    | .chunks/paragraph-20251115-020156
+recursive-character| 28     | 0.0        | 0.0           | 0.0    | .chunks/recursive-character-20251115-020156
+header             | 15     | 0.0        | 0.0           | 0.0    | .chunks/header-20251115-020156
+semantic           | 22     | 0.0        | 0.0           | 0.0    | .chunks/semantic-20251115-020156
 Total text length (chars): 3542
 ```
 
@@ -161,19 +232,20 @@ Total text length (chars): 3542
 Measure recall using a test file with questions and relevant phrases:
 
 ```bash
-rag-chunk analyze examples/ --strategy all --chunk-size 150 --overlap 30 --test-file examples/questions.json --top-k 3 --output table
+rag-chunk analyze examples/ --strategy all --chunk-size 150 --overlap 30 --test-file examples/questions.json --top-k 3 --use-embeddings --output table
 ```
 
 **Output:**
 ```
-strategy       | chunks | avg_recall | saved                                 
----------------+--------+------------+---------------------------------------
-fixed-size     | 24     | 0.7812     | .chunks/fixed-size-20251115-020203    
-sliding-window | 32     | 0.8542     | .chunks/sliding-window-20251115-020203
-paragraph      | 12     | 0.9167     | .chunks/paragraph-20251115-020203
+strategy           | chunks | avg_recall | avg_precision | avg_f1 | saved                                 
+-------------------+--------+------------+---------------+--------+---------------------------------------
+fixed-size         | 24     | 0.7812     | 0.7812        | 0.7812 | .chunks/fixed-size-20251115-020203    
+sliding-window     | 32     | 0.8542     | 0.8542        | 0.8542 | .chunks/sliding-window-20251115-020203
+paragraph          | 12     | 0.9167     | 0.9167        | 0.9167 | .chunks/paragraph-20251115-020203
+semantic           | 19     | 0.9583     | 0.9583        | 0.9583 | .chunks/semantic-20251115-020203
 ```
 
-Paragraph-based chunking achieves highest recall (91.67%) because it preserves semantic boundaries in well-structured documents.
+Semantic chunking with embedding-based retrieval achieves highest recall (95.83%) by preserving semantic coherence.
 
 ### Export Results as JSON
 
@@ -189,18 +261,24 @@ rag-chunk analyze examples/ --strategy sliding-window --chunk-size 120 --overlap
       "strategy": "sliding-window",
       "chunks": 38,
       "avg_recall": 0.8958,
+      "avg_precision": 0.8958,
+      "avg_f1": 0.8958,
       "saved": ".chunks/sliding-window-20251115-020210"
     }
   ],
   "detail": {
-    "sliding-window": [
+    "per_questions": [
       {
         "question": "What are the three main stages of a RAG pipeline?",
-        "recall": 1.0
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
       },
       {
         "question": "What is the main advantage of RAG over pure generative models?",
-        "recall": 0.6667
+        "recall": 0.6667,
+        "precision": 0.6667,
+        "f1": 0.6667
       }
     ]
   }
@@ -213,7 +291,7 @@ rag-chunk analyze examples/ --strategy sliding-window --chunk-size 120 --overlap
 rag-chunk analyze examples/ --strategy all --test-file examples/questions.json --output csv
 ```
 
-Creates `analysis_results.csv` with columns: strategy, chunks, avg_recall, saved.
+Creates `analysis_results.csv` with columns: strategy, chunks, avg_recall, avg_precision, avg_f1, saved.
 
 ## Using Tiktoken for Precise Token-Based Chunking
 
@@ -312,11 +390,14 @@ JSON file with a `questions` array (or direct array at top level):
 ### Chunks
 Number of chunks created by the strategy. More chunks = finer granularity but higher indexing cost.
 
-### Average Recall
-Percentage of relevant phrases successfully retrieved in top-k chunks (0.0 to 1.0). Higher is better.
+### Metrics
 
-**Interpreting recall:**
-- **> 0.85**: Excellent - strategy preserves most relevant information
+- **Average Recall:** Percentage of relevant phrases successfully retrieved (0.0 to 1.0). Higher is better.
+- **Average Precision:** Ratio of relevant content in retrieved chunks (0.0 to 1.0). Higher is better.
+- **Average F1-Score:** Harmonic mean of precision and recall (0.0 to 1.0). Balanced measure of quality.
+
+**Interpreting scores:**
+- **> 0.85**: Excellent - strategy works very well for your content
 - **0.70 - 0.85**: Good - acceptable for most use cases
 - **0.50 - 0.70**: Fair - consider adjusting chunk size or strategy
 - **< 0.50**: Poor - important information being lost or fragmented
@@ -325,6 +406,23 @@ Percentage of relevant phrases successfully retrieved in top-k chunks (0.0 to 1.
 Directory where chunks are written as individual `.txt` files for inspection.
 
 ## Choosing the Right Strategy
+
+| Strategy | Best For | Pros | Cons |
+|----------|----------|------|------|
+| **Fixed-Size** | Consistent chunk sizes, simple docs | Fast, deterministic | May break semantic boundaries |
+| **Sliding-Window** | Preventing boundary loss | Preserves context at edges | Redundancy, more chunks |
+| **Paragraph** | Well-structured docs | Preserves semantic coherence | Variable chunk sizes |
+| **Recursive-Character** | General purpose | Good balance, semantic-aware | Requires LangChain |
+| **Header** ⭐ | Technical docs, markdown | Preserves document structure | Requires header markup |
+| **Semantic** ⭐ | Maximum retrieval quality | Best semantic coherence | Requires embeddings, slower |
+
+### Recommendations
+
+- **Technical documentation:** Use `header` strategy to preserve structure
+- **Knowledge bases:** Use `semantic` for best retrieval quality
+- **General content:** Start with `recursive-character` or `paragraph`
+- **Token-limited models:** Enable `--use-tiktoken` for accurate counting
+- **Evaluation:** Always use `--use-embeddings` with test files for better semantic matching
 
 | Strategy | Best For | Chunk Size Recommendation |
 |----------|----------|---------------------------|
