@@ -274,6 +274,7 @@ def main():
         code = analyze(args)
         raise SystemExit(code)
     ap.print_help()
+    raise SystemExit(2)
 
 
 if __name__ == "__main__":
